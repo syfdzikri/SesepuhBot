@@ -1,0 +1,491 @@
+//AutoRecordBot -- Programmed by Syfdzikri - 2021
+
+var token = '1407821056:AAFmGpUxocBHYqqp17CdzmrpfRoBqHrAtuk';
+var ssId = '1RQf4gBfZuw5YiNb4I5sI7ZUMJ8ZuEmyc8DjUb94vg9M'; 
+
+var nowDay = new Date().getDay();
+var nowDay2 = Utilities.formatDate(new Date(),"GMT+7", "dd");
+var nowDate = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
+var nowDate2 = Utilities.formatDate(new Date(), "GMT+7", "dd/MMMM/yyyy");
+var nowDate3 = new Date().getMonth();
+var nowYear = new Date().getFullYear();
+var nowTime = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss");
+
+var batasLaporan = "22:00:00";
+
+//Bahasa Indonesia
+var weekday = new Array(7);
+weekday[0] = "Ahad";
+weekday[1] = "Senin";
+weekday[2] = "Selasa";
+weekday[3] = "Rabu";
+weekday[4] = "Kamis";
+weekday[5] = "Jum'at";
+weekday[6] = "Sabtu";
+
+//Bahasa Indonesia
+var months = new Array(12)
+months[0] = "Januari";
+months[1] = "Februari";
+months[2] = "Maret";
+months[3] = "April";
+months[4] = "Mei";
+months[5] = "Juni";
+months[6] = "Juli";
+months[7] = "Agustus";
+months[8] = "September";
+months[9] = "Oktober";
+months[10] = "November";
+months[11] = "Desember";
+
+var day = weekday[nowDay];
+var month = months[nowDate3];
+
+var id;
+var groupid = -1001187017291; //idgrupsesepuh
+
+var urls = "https://api.telegram.org/bot" + token;
+
+function getUpdates() { 
+  var response = UrlFetchApp.fetch(urls + "/getUpdates");
+  Logger.log(response.getContentText());
+}
+
+function doPost(e) {
+
+  if(e.postData.type == "application/json") {
+    
+    var update = JSON.parse(e.postData.contents);
+    
+    id = update.message.from.id;
+    var text = update.message.text;
+    var firstName = update.message.from.first_name;
+    var status = "3";
+
+    var bot = new Bot(token, update);
+    
+    var item = text.split("_");
+ 
+    var bus = new CommandBus();
+    
+
+    bus.on(/\/Start/i, function () {
+      this.replyToSender("Hi "+firstName+"!"+'\n'+"Aku Sesepuh Bot, salam kenal ya! 👊"+'\n'+ "Jangan lupa baca buku ya! Aku akan merekap laporan baca kamu. 😊😊"+'\n\n'+
+      "✍ Menu:"+ '\n\n'+
+       "/Start - Memulai bot"+ '\n'+
+       "/Register - Mendaftarkan ID untuk laporan"+ '\n'+
+       "Format laporan: /Lapor_Judul Buku_Jumhal"+ '\n'+
+       "/Form - Menampilkan Form hari ini"+ '\n'+
+       "/Rekapan - Menampilkan hasil rekapan hari ini"+ '\n'+
+       "/Help - Menampilkan menu help (bantuan)"+ '\n'+
+       "/About - Menampilkan about (tentang)"
+       );
+    });
+
+    bus.on(/\/Lapor/i, function () {
+      filterData();
+
+      if(item.length > 2){
+          if(cekId != 1){
+            if(nowTime.toString() <= batasLaporan ){
+              if(item[2] >= "10"){
+                var sheetRekapan = SpreadsheetApp.openById(ssId).getSheets()[0];
+                sheetRekapan.appendRow([nowDate, nowTime, id, firstName, item[1], item[2], status, text]);
+                this.replyToSender("Hi "+firstName+", laporan kamu berhasil direkap! ✅");
+                sheetRekapan.sort([{column: 1, ascending: false}, {column: 2, ascending: false}]);
+              }
+              else{
+                this.replyToSender("Hi "+firstName+", laporan kamu gagal direkap! ❌ Jumlah halaman buku yang kamu baca kurang dari 10, ayoo tambah lagi! 💪💪");
+              }
+            }
+            else{
+              this.replyToSender("Hi "+firstName+", laporan kamu gagal direkap! ❌ Batas waktu sudah terlewat, tetap semangat!");
+            }      
+          }
+          else{
+            this.replyToSender("Hi "+firstName+", laporan kamu gagal direkap! ❌ Kamu sudah laporan hari ini!")
+          }   
+        }  
+        else{
+          this.replyToSender("Hi "+firstName+", laporan kamu gagal direkap! ❌ Periksa lagi format laporannya yaa!"); 
+        }
+
+    });    
+
+    bus.on(/\/Register/i, function () {
+      
+      //filterData();
+      formBaru();
+
+      //Logger.log(cekIDForm);
+
+      if(cekIDForm != 1){
+          var sheetForm = SpreadsheetApp.openById(ssId).getSheets()[1];
+
+          var vlookup1 = sheetForm.getRange("C2").getFormula();
+          var vlookup2 = sheetForm.getRange("D2").getFormula();
+          var vlookup3 = sheetForm.getRange("E2").getFormula();
+          var vlookup4 = sheetForm.getRange("F2").getFormula();
+          var vlookup5 = sheetForm.getRange("G2").getFormula();
+
+          sheetForm.appendRow([id, firstName, vlookup1, vlookup2, vlookup3, vlookup4, vlookup5]);
+          this.replyToSender("Hi "+firstName+", Pendaftar ID berhasil dilakukan! ✅");
+              //sheetForm.sort([{column: 1, ascending: false}, {column: 2, ascending: false}]);
+        }
+        else{
+          this.replyToSender("Hi "+firstName+", Pendaftaran ID gagal! ❌ ID kamu sudah terdaftar!")
+        }   
+
+    });  
+    bus.on(/\/Rekapan/i, function () {
+      
+      filterData();
+
+      this.replyToSender("📖 Sesepuh (Sehari Sepuluh) 📖" + '\n\n' +
+        "   ☀ "+day+", "+nowDay2+" "+month+" "+nowYear+" ☀"+ "\n\n" +
+        "〰〰〰〰🖊📚🖊〰〰〰〰" + '\n\n' +
+        "     'Baca Buku, Baca Dunia'" + '\n\n' +
+        "Grup 1:"+ '\n' +rekapanAll+'\n'+
+        "📝 Rekap:"+ '\n' + 
+        "🕕 06:00 s/d 🕙 22.00"+'\n\n'+
+        "Keterangan:" + '\n' +
+        "#⃣ : Peringkat grup"+ '\n' +
+        "🆔 : ID Sesepuh"+ '\n' +
+        "✅ : Sudah lapor"+ '\n' +
+        "⚪ : Belum lapor hari ini"+ '\n' +
+        "🔵 : Belum lapor 2 hari"+ '\n' +
+        "🔴 : Belum lapor 3 hari"+ '\n' +
+        "🚷 : Hapus dari list grup");
+    });
+
+    bus.on(/\/Form/i, function () {
+      
+      filterData();
+      formBaru();
+
+      this.replyToSender("📖 Sesepuh (Sehari Sepuluh) 📖" + '\n\n' +
+        "   ☀ "+day+", "+nowDay2+" "+month+" "+nowYear+" ☀"+ "\n\n" +
+        "〰〰〰〰🖊📚🖊〰〰〰〰" + '\n\n' +
+        "     'Baca Buku, Baca Dunia'" + '\n\n' +
+        "Grup 1:"+ '\n' +formAll+'\n'+
+        "📝 Rekap:"+ '\n' + 
+        "🕕 06:00 s/d 🕙 22.00"+'\n\n'+
+        "Keterangan:" + '\n' +
+        "#⃣ : Peringkat grup"+ '\n' +
+        "🆔 : ID Sesepuh"+ '\n' +
+        "✅ : Sudah lapor"+ '\n' +
+        "⚪ : Belum lapor hari ini"+ '\n' +
+        "🔵 : Belum lapor 2 hari"+ '\n' +
+        "🔴 : Belum lapor 3 hari"+ '\n' +
+        "🚷 : Hapus dari list grup");
+    });
+
+     bus.on(/\/Report/i, function () {
+      
+      formBaru();
+
+      this.replyToSender("📖 Sesepuh (Sehari Sepuluh) 📖" + '\n\n' +
+        "   ☀ "+day+", "+nowDay2+" "+month+" "+nowYear+" ☀"+ "\n\n" +
+        "〰〰〰〰🖊📚🖊〰〰〰〰" + '\n\n' +
+        "     'Baca Buku, Baca Dunia'" + '\n\n' +
+        "Report Member Sesepuh:"+ '\n' +reportAll+'\n'
+        );
+    });
+
+     bus.on(/\/Help/i, function () {
+       this.replyToSender("✍ Menu Help:"+ '\n\n'+
+       "/Start - Memulai bot"+ '\n'+
+       "/Register - Mendaftarkan ID untuk laporan"+ '\n'+
+       "Format laporan: /Lapor_Judul Buku_Jumhal"+ '\n'+
+       "/Form - Menampilkan Form hari ini"+ '\n'+
+       "/Rekapan - Menampilkan hasil rekapan hari ini"+ '\n'+
+       "/Help - Menampilkan menu help (bantuan)"+ '\n'+
+       "/About - Menampilkan about (tentang)"
+       ); 
+    });
+
+     bus.on(/\/About/i, function () {
+       this.replyToSender("✍ About Sesepuh Bot:"+ '\n\n'+
+       "Sesepuh Bot version 1.0.0"+ '\n'+
+       "Apps script webhook version"+ '\n'+
+       "Programmed by Syfdzikri"+ '\n'+
+       "© 2021 - Special for Rumah Baca Sesepuh"
+       ); 
+    });
+    
+    
+    // Register the command bus
+    bot.register(bus);
+    
+    // If the update is valid, process it
+    if (update) {
+      bot.process();
+    }   
+  }      
+}
+
+/*
+function onEdit(e){
+  var userSheet = SpreadsheetApp.openById(ssId).getSheets()[0];
+  var lastRow = userSheet.getLastRow();
+  var lastColumn = userSheet.getLastColumn();
+  var range = userSheet.getRange(2, 1, lastRow-1, lastColumn);
+
+  range.sort([{column: 1, ascending: false}, {column: 2, ascending: false}]);
+
+}*/
+
+function onEdit(e){
+  var activeSheet = e.source.getActivesheet();
+  var tabs = ['Form']
+  var columns = [3, 4, 5, 6, 7]
+  if (tabs.indexOf(activeSheet.getName()) !== -1){
+    var cell = e.range;
+    var col = cell.getColumn();
+    if(columns.indexOf(col) !== -1){
+      if(cell.getFormula() != ""){
+        var destianation = activeSheet.getRange(2, col, activeSheet.getLastRow()-1, 1)
+        cell.copyTo(destianation);
+      }
+    }
+  }
+}
+
+var myId;
+var rekapanAll = "";
+var cekId;
+var nama;
+var judBuk;
+var jumHal;
+
+function filterData(){
+  var userSheet = SpreadsheetApp.openById(ssId).getSheets()[0];
+  var lastRow = userSheet.getLastRow();
+  var lastColumn = userSheet.getLastColumn();
+  var range = userSheet.getRange(2, 1, lastRow-1, lastColumn);
+  var originalData = range.getValues();
+  
+
+  range.sort([{column: 1, ascending: false}, {column: 2, ascending: false}]);
+  /*
+  var filterData = originalData.filter(function(filterbyTime){
+      return filterbyTime[0] = today; 
+  }); */
+
+//Logger.log(originalData);
+  
+  for(let i=0; i<lastRow-1; i++){
+      myId = originalData[i][2]
+
+      let date = originalData[i][0];
+      date = Utilities.formatDate(date, 'GMT+7', 'dd/MM/yyyy');
+
+      let today = new Date();
+      today = Utilities.formatDate(today, 'GMT+7', 'dd/MM/yyyy');
+
+      nama = originalData[i][3];
+      judBuk = originalData[i][4];
+      jumHal = originalData[i][5];
+
+      if(date == today){
+        
+        if(myId == id){
+          cekId = 1;
+        }
+        else{
+          cekId = 0;
+        }
+
+        rekapanAll += "#⃣01 🆔S01: "+nama+" ✅ "+judBuk+" ("+jumHal+")"+'\n';
+
+          /*
+          Logger.log(date);
+          Logger.log(judBuk);
+          Logger.log(jumHal);*/
+
+          //Logger.log(rekapanAll);
+          //return(rekapanAll);
+      }
+      //Logger.log(date);
+      //Logger.log(today);
+     }
+}
+
+var formAll = "";
+var reportAll = "";
+var statusSymbol = "⚪"
+var cekIDForm = 1;
+
+function formBaru(){
+  //filterData();
+
+  var userSheet = SpreadsheetApp.openById(ssId).getSheets()[1];
+  var lastRow = userSheet.getLastRow();
+  var lastColumn = userSheet.getLastColumn();
+
+  var originalData = userSheet.getRange(2, 1, lastRow-1, lastColumn).getValues();
+  
+//Logger.log(originalData);
+  
+  for(let i=0; i<lastRow-1; i++){
+
+      let userID = originalData[i][0];
+      let nama = originalData[i][1];
+      let judulbuku = originalData[i][2];
+      let jumlahhal = originalData[i][3];
+      let status = originalData[i][4]; 
+      let totalHal = originalData[i][5];
+      let rank = originalData[i][6];
+      let sesepuhID = originalData[i][7];
+
+      if(userID == id){
+          cekIDForm = 1;
+        }
+        else{
+          cekIDForm = 0;
+        }
+
+      switch (status)  {
+        case 0:
+            statusSymbol = "⚪";
+            break;
+        case 1:
+            statusSymbol = "🔵";
+            break;
+        case 2:
+            statusSymbol = "🚷";
+            break;
+        case 3:
+            statusSymbol = "✅";
+            break;
+        default:
+            statusSymbol = "⚪";
+            break;
+    }
+
+        formAll += "#⃣"+rank+" 🆔S"+sesepuhID+": "+nama+" "+statusSymbol+" "+judulbuku+" ("+jumlahhal+")"+'\n';
+        
+        reportAll += "#⃣"+rank+" 🆔S"+sesepuhID+": "+nama+" ✎"+" Total halaman baca buku: "+totalHal+'\n';
+
+          /*
+          Logger.log(date);
+          Logger.log(judBuk);
+          Logger.log(jumHal);*/
+          
+          //Logger.log(formAll);
+          //return(rekapanAll);
+      }
+}
+
+function setWebhook() {
+  var bot = new Bot(token, {});
+  var result = bot.request('setWebhook', {
+    url: "https://script.google.com/macros/s/AKfycbzRpIAXHsk3HYiMctE2_H8E_G0SZNKYD2u0K2nZEHTyNDU6QppJaXF8JpkhEa2f396O/exec"
+  });
+  
+  Logger.log(result);
+}
+
+function delWebhook() {
+  var bot = new Bot(token, {});
+  var result = bot.request('setWebhook', {
+    url: ""
+  });
+  
+  Logger.log(result);
+}
+
+function Bot (token, update) {
+  this.token = token;
+  this.update = update;
+  this.handlers = [];
+}
+
+Bot.prototype.register = function ( handler) {
+  this.handlers.push(handler);
+}
+
+Bot.prototype.process = function () {  
+  for (var i in this.handlers) {
+    var event = this.handlers[i];
+    var result = event.condition(this);
+    if (result) {
+      return event.handle(this);
+    }
+  }
+}
+
+Bot.prototype.request = function (method, data) {
+  var options = {
+    'method' : 'post',
+    'contentType': 'application/json',
+    'payload' : JSON.stringify(data)
+  };
+  
+  var response = UrlFetchApp.fetch('https://api.telegram.org/bot' + this.token + '/' + method, options);
+    
+  if (response.getResponseCode() == 200) {
+    return JSON.parse(response.getContentText());
+  }
+  
+  return false;
+}
+
+Bot.prototype.replyToSender = function (text) {
+  return this.request('sendMessage', {
+    'chat_id': groupid,
+    'text': text
+  });
+}
+
+function CommandBus() {
+  this.commands = [];
+}
+
+CommandBus.prototype.on = function (regexp, callback) {
+  this.commands.push({'regexp': regexp, 'callback': callback});
+}
+
+CommandBus.prototype.condition = function (bot) {
+  return bot.update.message.text.charAt(0) === '/';
+}
+
+CommandBus.prototype.handle = function (bot) {  
+  for (var i in this.commands) {
+    var cmd = this.commands[i];
+    var tokens = cmd.regexp.exec(bot.update.message.text);
+    if (tokens != null) {
+      return cmd.callback.apply(bot, tokens.splice(1));
+    }
+  }
+  return bot.replyToSender("❗ Periksa lagi perintah kamu!");
+}
+
+function sendText(id,text) {
+  var url = telegramAPI + "/sendMessage?chat_id=" + id + "&text=" + text;
+  var response = UrlFetchApp.fetch(url);
+  Logger.log(response.getContentText());
+}
+
+/*
+function autoSend(){
+      filterData();
+      formBaru();
+
+       this.replyToSender("📖 Sesepuh (Sehari Sepuluh) 📖" + '\n\n' +
+        "   ☀ "+day+", "+nowDay2+" "+month+" "+nowYear+" ☀"+ "\n\n" +
+        "〰〰〰〰🖊📚🖊〰〰〰〰" + '\n\n' +
+        "     'Baca Buku, Baca Dunia'" + '\n\n' +
+        "Grup 1:"+ '\n' +formAll+'\n'+
+        "📝 Rekap:"+ '\n' + 
+        "🕕 06:00 s/d 🕙 22.00"+'\n\n'+
+        "Keterangan:" + '\n' +
+        "#⃣ : Peringkat grup"+ '\n' +
+        "🆔 : ID Sesepuh"+ '\n' +
+        "✅ : Sudah lapor"+ '\n' +
+        "⚪ : Belum lapor hari ini"+ '\n' +
+        "🔵 : Belum lapor 2 hari"+ '\n' +
+        "🔴 : Belum lapor 3 hari"+ '\n' +
+        "🚷 : Hapus dari list grup");
+}*/
+
